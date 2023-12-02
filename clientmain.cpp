@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
   msg.type = htons(22);     //binary protocol for client-to-server
   msg.message = htonl(0);   //Not appliicable or available
   msg.protocol = htons(17); //UDP
-  msg.major_version = htons(1):
+  msg.major_version = htons(1);
   msg.minor_version = htons(0);
 
   struct addrinfo hint, *servinfo, *p;
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
   while (nrOfSent < 3)
   {
     memset(&msgRcv, 0, sizeof(msgRcv));
-    bytesReceived = recvfrom(sock, &msgRcv, sizeof(msgRcv), 0, p->ai_addr, p->ai_addrlen == -1);
+    bytesReceived = recvfrom(sock, &msgRcv, sizeof(msgRcv), 0, p->ai_addr, &p->ai_addrlen);
     if (bytesReceived < 0)
     {
       cout << "Receive timeout, sending again.\n";
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 
   if (bytesReceived < (int)sizeof(msgRcv))
   {
-    //Receive a valculated Message
+    //Receive a calculated Message
     calcMessage *clcMsg = (calcMessage *)&msgRcv;
     if (checkMsg(clcMsg))
     {
@@ -148,7 +148,8 @@ int main(int argc, char *argv[])
   }
  
    //Receive a calcProtocol
-  int i1 = ntohl(msgRcv.inValue1), i2 = ntohl(msgRcv.inValue2), iRes = ntohl(msgRcv.inResult);    float fi = msgRcv.flValue1, f2 = msgRcv.flValue2, fRes = msgRcv.flResult;
+  int i1 = ntohl(msgRcv.inValue1), i2 = ntohl(msgRcv.inValue2), iRes = ntohl(msgRcv.inResult);    
+  float f1 = msgRcv.flValue1, f2 = msgRcv.flValue2, fRes = msgRcv.flResult;
   cout << "Task:";
   string op = "";
 
@@ -276,6 +277,3 @@ int main(int argc, char *argv[])
   close(sock);
   return 0;
 }
-  
-
-
