@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
   while (nrOfSent < 3)
   {
     memset(&msgRcv, 0, sizeof(msgRcv));
-    bytesReceived = recvfrom(sock, &msgRcv, sizeof(msgRcv), 0, p->ai_addr, p->ai_addrlen == -1)
+    bytesReceived = recvfrom(sock, &msgRcv, sizeof(msgRcv), 0, p->ai_addr, p->ai_addrlen == -1);
     if (bytesReceived < 0)
     {
       cout << "Receive timeout, sending again.\n";
@@ -123,92 +123,159 @@ int main(int argc, char *argv[])
         continue;
       }
       else
-      [
+      {
         cout << "Unable to send message.\n";
         close(sock);
         exit(1);
-      ]
+      }
     }
     else
      {
         nrOfSent = 0;
         break;
       }
-    }
+  }
 
-    if (bytesReceived < (int)sizeof(msgRcv))
+  if (bytesReceived < (int)sizeof(msgRcv))
+  {
+    //Receive a valculated Message
+    calcMessage *clcMsg = (calcMessage *)&msgRcv;
+    if (checkMsg(clcMsg))
     {
-      //Receive a valculated Message
-      calcMessage *clcMsg = (calcMessage *)&msgRcv;
-      if (checkMsg(clcMsg))
+      cout << "A NOT OK message is gotten.\nAbort!\n";
+      close(sock);
+    }
+  }
+ 
+   //Receive a calcProtocol
+  int i1 = ntohl(msgRcv.inValue1), i2 = ntohl(msgRcv.inValue2), iRes = ntohl(msgRcv.inResult);    float fi = msgRcv.flValue1, f2 = msgRcv.flValue2, fRes = msgRcv.flResult;
+  cout << "Task:";
+  string op = "";
+
+  switch (ntohl(msgRcv.arith))
+  {
+  case 1: //addition
+    cout << "Add "<< i1 <<" "<<i2 << endl;
+    iRes = i1 + i2;
+    msgRcv.inResult = htonl(iRes);
+    op = "i";
+    break;
+  case 2: //subtraction
+    cout << "Sub "<< i1 << " "<<i2 << endl;
+    iRes = i1 - i2;
+    msgRcv.inResult = htonl(iRes);
+    op = "i";
+    break;
+  case 3: //multiplication
+    cout << "Mul "<< i1 << " "<<i2 << endl;
+    iRes = i1 * i2;
+    msgRcv.inResult = htonl(iRes);
+    op = "i";
+    break;
+  case 4: //division
+    cout << "Div "<< i1 << " "<<i2 << endl;
+    iRes = i1 / i2;
+    msgRcv.inResult = htonl(iRes);
+    op = "i";
+    break;
+  case 5: //float add
+    cout << "Fadd "<< f1 << " "<<f2 << endl;
+    fRes = f1 + f2;
+    msgRcv.flResult = fRes;
+    op = "f";
+    break;
+  case 6: //float sub
+    cout << "Fsub "<< f1 << " "<<f2 << endl;
+    fRes = f1 - f2;
+    msgRcv.flResult = fRes;
+    op = "f";
+    break;
+  case 7: //float mul
+    cout << "Fmul "<< f1 << " "<<f2 << endl;
+    fRes = f1 * f2;
+    msgRcv.flResult = fRes;
+    op = "f";
+    break;
+  case 8: //float div
+    cout << "Fdiv "<< f1 << " "<<f2 << endl;
+    fRes = f1 / f2;
+    msgRcv.flResult = fRes;
+    op = "f";
+    break;
+  default:
+    cout << "Cant do that operation.\n";
+    break;
+  }
+
+  if (sendto(sock, &msgRcv, sizeof(msgRcv), 0, p->ai_addr, p->ai_addrlen) == -1)
+  {
+    cout << "Unable to send message\n";
+    close(sock);
+    exit(1);
+  }
+  if(op == "1"){
+    cout << "Sent result: "<< ntohl(msgRcv.inResult)<<"\n";
+  }
+  else{
+    cout << "Sent result: "<< msgRcv.flResult<<"\n";
+  }
+
+  calcMessage resp;
+
+  while (nrOfSent < 3)
+  {
+    memset(&resp, 0, sizeof(resp));
+    bytesReceived = recvfrom(sock, &resp, sizeof(resp), 0,p->ai_addr, &p->ai_addrlen);
+    if (bytesReceived < 0)
+    {
+      cout << "Receive timeout, sending again.\n";
+      nrOfSent++;
+      if (sendto(sock, &msgRcv, sizeof(msgRcv), 0, p->ai_addr, p->ai_addrlen) == -1)
       {
-        cout << "A NOT OK message is gotten.\nAbort!\n";
+        cout << "Unable to send message.\n";
         close(sock);
+        exit(1);
+      }
+      if (nrOfSent < 3)
+      {
+        continue;
+      }
+      else
+      {
+        cout << "unable to send message.\n";
+        close(sock);
+        exit(1);
       }
     }
-
-    //Receive a calcProtocol
-    int i1 = ntohl(msgRcv.inValue1), i2 = ntohl(msgRcv.inValue2), iRes = ntohl(msgRcv.inResult);
-    float fi = msgRcv.flValue1, f2 = msgRcv.flValue2, fRes = msgRcv.flResult;
-    cout << "Task:";
-    string op = "";
-
-    switch (ntohl(msgRcv.arith))
+    else
     {
-      case 1: //addition
-        cout << "Add "<< i1 <<" "<<i2 << endl;
-        iRes = i1 + i2;
-        msgRcv.inResult = htonl(iRes);
-        op = "i";
-        break;
-      case 2: //subtraction
-        cout << "Sub "<< i1 << " "<<i2 << endl;
-        iRes = i1 - i2;
-        msgRcv.inResult = htonl(iRes);
-        op = "i";
-        break;
-      case 3: //multiplication
-        cout << "Mul "<< i1 << " "<<i2 << endl;
-        iRes = i1 * i2;
-        msgRcv.inResult = htonl(iRes);
-        op = "i";
-        break;
-      case 4: //division
-        cout << "Div "<< i1 << " "<<i2 << endl;
-        iRes = i1 / i2;
-        msgRcv.inResult = htonl(iRes);
-        op = "i";
-        break;
-      case 5: //float add
-        cout << "Fadd "<< f1 << " "<<f2 << endl;
-        fRes = f1 + f2;
-        msgRcv.flResult = fRes;
-        op = "f";
-        break;
-      case 6: //float sub
-        cout << "Fsub "<< f1 << " "<<f2 << endl;
-        fRes = f1 - f2;
-        msgRcv.flResult = fRes;
-        op = "f";
-        break;
-      case 7: //float mul
-        cout << "Fmul "<< f1 << " "<<f2 << endl;
-        fRes = f1 * f2;
-        msgRcv.flResult = fRes;
-        op = "f";
-        break;
-      case 8: //float div
-        cout << "Fdiv "<< f1 << " "<<f2 << endl;
-        fRes = f1 / f2;
-        msgRcv.flResult = fRes;
-        op = "f";
-        break;
-      default:
-        cout << "Cant do that operation.\n";
-        break;
-    }
-  
+      nrOfSent = 0;
+      break;
+    }    
   }
+  if (checkMsg(&resp) == -1)
+  {
+    cout << "A NOT OK message is gotten.\nAbort!\n";
+    close(sock);
+    exit(1);
+  }
+
+  switch (ntohl(resp.message))
+  {
+  case 0:
+    cout << "Not available\n";
+    break;
+  case 1:
+    cout << "Ok\n";
+    break;
+  case 2:
+    cout << "NOT OK";
+    break;
+  }
+
+  close(sock);
+  return 0;
+}
   
 
-}
+
