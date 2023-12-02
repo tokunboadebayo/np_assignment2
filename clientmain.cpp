@@ -9,12 +9,10 @@
 #include <string>
 #include <iostream>
 #include <unistd.h>
-
 #include <stdio.h>
 #include <inttypes.h>
 // Included to get the support library
 #include "calcLib.h"
-
 #include "protocol.h"
 
 using namespace std;
@@ -130,10 +128,10 @@ int main(int argc, char *argv[])
       }
     }
     else
-     {
-        nrOfSent = 0;
-        break;
-      }
+    {
+      nrOfSent = 0;
+      break;
+    }
   }
 
   if (bytesReceived < (int)sizeof(msgRcv))
@@ -144,6 +142,7 @@ int main(int argc, char *argv[])
     {
       cout << "A NOT OK message is gotten.\nAbort!\n";
       close(sock);
+      exit(1);
     }
   }
  
@@ -214,7 +213,7 @@ int main(int argc, char *argv[])
     close(sock);
     exit(1);
   }
-  if(op == "1"){
+  if(op == "i"){
     cout << "Sent result: "<< ntohl(msgRcv.inResult)<<"\n";
   }
   else{
@@ -270,7 +269,7 @@ int main(int argc, char *argv[])
     cout << "Ok\n";
     break;
   case 2:
-    cout << "NOT OK";
+    cout << "NOT OK\n";
     break;
   }
 
