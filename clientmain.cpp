@@ -1,16 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <string>
-#include <iostream>
-#include <unistd.h>
-#include <stdio.h>
-#include <inttypes.h>
+/* You will to add includes here */
+
+
 // Included to get the support library
 #include "calcLib.h"
 #include "protocol.h"
