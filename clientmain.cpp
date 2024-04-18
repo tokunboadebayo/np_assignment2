@@ -258,3 +258,46 @@ int main(int argc, char *argv[]) {
     if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
         perror("Error");
     }
+
+    // print the details of the port used to send the UDP message
+    struct sockaddr_in local_address;
+    socklen_t local_address_len = sizeof(local_address);
+    if (getsockname(socket_fd, (struct sockaddr *) &local_address, &local_address_len) == -1) {
+        perror("getsockname");
+        exit(1);
+    }
+#if DEBUG
+    printf("Local address: %s\n", inet_ntoa(local_address.sin_addr));
+    printf("Local port: %d\n", ntohs(local_address.sin_port));
+#endif
+
+
+    calcMessage message;
+    create_calcMessage(&message);
+
+    // Send the message to the server
+    bool response_received = false;
+    int number_of_tries = 3;
+
+    do {
+        if (send_message(socket_fd, &message, sizeof(message), &server_address) != OK) {
+            exit(1);
+        }
+
+        // Receive message from server and store it in message_received and server_address in client_address
+        error_codes status = receive_message(socket_fd, &server_calcProtocol, sizeof(server_calcProtocol),
+                                             &client_address);
+        if (status == OK) {
+            response_received = true;
+        } else if (status == TIMEOUT) {
+            printf("Timeout\n");
+        } else {
+            exit(1);
+        }
+    } while (!response_received && --number_of_tries > 0);
+
+
+    if (!response_received) {
+        printf("No response received\n");
+        exit(1);
+    }
