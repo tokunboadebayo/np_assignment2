@@ -107,6 +107,7 @@ error_codes receive_message(int socket_fd, void *message, uint32_t message_len, 
     return OK;
 }
 
+
 error_codes process_calc_control(calcProtocol *server_calcProtocol, calcProtocol *client_response) {
     if (server_calcProtocol == nullptr || client_response == nullptr) {
         return ERROR;
@@ -172,3 +173,88 @@ error_codes process_calc_control(calcProtocol *server_calcProtocol, calcProtocol
         }
     }
 
+    // Based on the operation update the result.
+    if (arith >= ADD && arith <= DIV) {
+        client_response->inResult = htonl((int32_t) result);
+    } else {
+        // float operations
+        client_response->flResult = (float)result;
+    }
+#if 1
+    // print the result
+    printf("Result: %f\n", (float)result);
+#endif
+    return OK;
+}
+
+
+void print_calcProtcol(calcProtocol *message) {
+#if DEBUG
+    if (message == nullptr) {
+        return;
+    }
+    printf("Type: %d\n", ntohs(message->type));
+    printf("Major Version: %d\n", ntohs(message->major_version));
+    printf("Minor Version: %d\n", ntohs(message->minor_version));
+    printf("ID: %d\n", ntohl(message->id));
+    printf("Arith: %d\n", ntohl(message->arith));
+    printf("inValue1: %d\n", ntohl(message->inValue1));
+    printf("inValue2: %d\n", ntohl(message->inValue2));
+    printf("inResult: %d\n", ntohl(message->inResult));
+    printf("flValue1: %f\n", message->flValue1);
+    printf("flValue2: %f\n", message->flValue2);
+    printf("flResult: %f\n", message->flResult);
+#endif
+}
+
+int main(int argc, char *argv[]) {
+    char server_name[SERVER_NAME_LEN_MAX + 1] = {0};
+    int server_port, socket_fd;
+    struct hostent *server_host;
+    struct sockaddr_in server_address;
+    struct calcProtocol server_calcProtocol;
+    struct sockaddr_in client_address;
+    struct timeval tv;
+
+    char delim[] = ":";
+    char *Desthost = strtok(argv[1], delim);
+    char *Destport = strtok(nullptr, delim);
+
+    // Check if the input is correct
+    if (Desthost == nullptr || Destport == nullptr) {
+        printf("Usage: %s <ip>:<port>\n", argv[0]);
+        exit(1);
+    }
+
+    /* Get server name from command line arguments or stdin. */
+    strncpy(server_name, Desthost, SERVER_NAME_LEN_MAX);
+
+    /* Get server port from command line arguments or stdin. */
+    server_port = atoi(Destport);
+
+    /* Print IP or Host and Port number */
+    // Host 127.0.0.1, and port 5000.
+
+    printf("Host %s, and port %d.\n", server_name, server_port);
+    /* Get server host from server name. */
+    server_host = gethostbyname(server_name);
+
+    /* Initialise IPv4 server address with server host. */
+    memset(&server_address, 0, sizeof server_address);
+    server_address.sin_family = server_host->h_addrtype;
+    server_address.sin_port = htons(server_port);
+    memcpy(&server_address.sin_addr.s_addr, server_host->h_addr, server_host->h_length);
+
+
+    /* Create UDP socket. */
+    if ((socket_fd = socket(server_host->h_addrtype, SOCK_DGRAM, 0)) == -1) {
+        perror("socket");
+        exit(1);
+    }
+
+    /* Set Socket option for timeout */
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        perror("Error");
+    }
