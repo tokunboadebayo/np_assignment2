@@ -46,3 +46,36 @@ void print_calcMessage(calcMessage *message) {
     }
 
 }
+
+void create_calcMessage(calcMessage *message) {
+    if (message == nullptr) {
+        return;
+    }
+
+    memset(message, 0, sizeof(calcMessage));
+    /*
+     * type 22
+       message 0
+       protocol 17
+       major_version 1
+       minor_version 0
+       Use network byte order for all fields
+     * */
+
+    message->type = htons(22);
+    message->message = htonl(0);
+    message->protocol = htons(17);
+    message->major_version = htons(1);
+    message->minor_version = htons(0);
+}
+
+error_codes send_message(int socket_fd, void *message, uint32_t message_len, struct sockaddr_in *server_address) {
+    ssize_t sent_bytes;
+    sent_bytes = sendto(socket_fd, message, message_len, 0, (struct sockaddr *) server_address,
+                        sizeof(struct sockaddr_in));
+    if (sent_bytes == -1) {
+        perror("sendto");
+        return ERROR;
+    }
+    return OK;
+}
