@@ -107,3 +107,68 @@ error_codes receive_message(int socket_fd, void *message, uint32_t message_len, 
     return OK;
 }
 
+error_codes process_calc_control(calcProtocol *server_calcProtocol, calcProtocol *client_response) {
+    if (server_calcProtocol == nullptr || client_response == nullptr) {
+        return ERROR;
+    }
+
+    memset(client_response, 0, sizeof(calcProtocol));
+
+
+    client_response->type = htons(2);
+    client_response->major_version = htons(1);
+    client_response->minor_version = htons(0);
+    client_response->id = htonl(ntohl(server_calcProtocol->id));
+    client_response->inValue1 = htonl(ntohl(server_calcProtocol->inValue1));
+    client_response->inValue2 = htonl(ntohl(server_calcProtocol->inValue2));
+    client_response->flValue1 = server_calcProtocol->flValue1;
+    client_response->flValue2 = server_calcProtocol->flValue2;
+    client_response->arith = htonl(ntohl(server_calcProtocol->arith));
+
+    int val1 = ntohl(server_calcProtocol->inValue1);
+    int val2 = ntohl(server_calcProtocol->inValue2);
+    int arith = ntohl(server_calcProtocol->arith);
+    double result = 0;
+    switch (arith) {
+        case ADD: {
+            result = val1 + val2;
+            printf("ASSIGNMENT: %s %d %d\n", "add", val1, val2);
+            break;
+        }
+        case SUB: {
+            result = val1 - val2;
+            printf("ASSIGNMENT: %s %d %d\n", "sub", val1, val2);
+            break;
+        }
+        case MUL: {
+            result = val1 * val2;
+            printf("ASSIGNMENT: %s %d %d\n", "mul", val1, val2);
+            break;
+        }
+        case DIV: {
+            result = val1 / val2;
+            printf("ASSIGNMENT: %s %d %d\n", "div", val1, val2);
+            break;
+        }
+        case FADD: {
+            result = server_calcProtocol->flValue1 + server_calcProtocol->flValue2;
+            printf("ASSIGNMENT: %s %f %f\n", "fadd", server_calcProtocol->flValue1, server_calcProtocol->flValue2);
+            break;
+        }
+        case FSUB: {
+            result = server_calcProtocol->flValue1 - server_calcProtocol->flValue2;
+            printf("ASSIGNMENT: %s %f %f\n", "fsub", server_calcProtocol->flValue1, server_calcProtocol->flValue2);
+            break;
+        }
+        case FMUL: {
+            result = server_calcProtocol->flValue1 * server_calcProtocol->flValue2;
+            printf("ASSIGNMENT: %s %f %f\n", "fmul", server_calcProtocol->flValue1, server_calcProtocol->flValue2);
+            break;
+        }
+        case FDIV: {
+            result = server_calcProtocol->flValue1 / server_calcProtocol->flValue2;
+            printf("ASSIGNMENT: %s %f %f\n", "fdiv", server_calcProtocol->flValue1, server_calcProtocol->flValue2);
+            break;
+        }
+    }
+
