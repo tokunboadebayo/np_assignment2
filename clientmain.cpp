@@ -26,3 +26,23 @@ typedef enum calcMessage_message
     RESULT_OK,
     RESULT_NOK
 }calcMessage_message;
+
+
+void print_calcMessage(calcMessage *message) {
+#if DEBUG
+    if (message == nullptr) {
+        return;
+    }
+    printf("Type: %d\n", ntohs(message->type));
+    printf("Message: %d\n", ntohl(message->message));
+    printf("Protocol: %d\n", ntohs(message->protocol));
+    printf("Major Version: %d\n", ntohs(message->major_version));
+    printf("Minor Version: %d\n", ntohs(message->minor_version));
+#endif
+    if (message->message == htonl(RESULT_OK)) {
+        printf("OK\n");
+    } else {
+        printf("ERROR\n");
+    }
+
+}
