@@ -250,6 +250,22 @@ int main(int argc, char *argv[]) {
     };
 
 
+    // Extract the first IP address
+    struct sockaddr_storage server_addr;
+    for (p = server_info; p != NULL; p = p->ai_next) {
+        if (p->ai_family == AF_INET || p->ai_family == AF_INET6) {
+            memcpy(&server_addr, p->ai_addr, p->ai_addrlen);
+            break;
+        }
+    }
+
+    if (p == NULL) {
+        fprintf(stderr, "Failed to extract IP address\n");
+        return 2;
+    }
+
+
+
     /* Create UDP socket. */
     if ((socket_fd = socket(server_host->h_addrtype, SOCK_DGRAM, 0)) == -1) {
         perror("socket");
