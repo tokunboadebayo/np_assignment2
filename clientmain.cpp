@@ -358,12 +358,12 @@ int main(int argc, char *argv[]) {
     do
     {
         // Send the response to the server
-        if (send_message(socket_fd, &client_response, sizeof(client_response), &server_address) != OK) {
+        if (send_message(socket_fd, &client_response, sizeof(client_response), (struct sockaddr_in *)&server_addr) != OK) {
             exit(1);
         }
 
         // Receive message from server and store it in message_received and server_address in client_address
-        error_codes status  = receive_message(socket_fd, &server_calcMessage, sizeof(server_calcMessage),
+        error_codes_t status  = receive_message(socket_fd, &server_calcMessage, sizeof(server_calcMessage),
                                              &client_address);
 
         if (status == OK) {
@@ -374,7 +374,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     } while (!response_received && --number_of_tries > 0);
-
+    
     if (!response_received) {
         printf("No response received\n");
         exit(1);
