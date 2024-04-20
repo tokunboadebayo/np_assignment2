@@ -278,8 +278,8 @@ int main(int argc, char *argv[]) {
     inet_ntop(server_addr.ss_family, addr, ipstr, sizeof ipstr);
     printf("Connecting to %s\n", ipstr);
 
-    /* Create UDP socket. */
-    if ((socket_fd = socket(server_host->h_addrtype, SOCK_DGRAM, 0)) == -1) {
+     /* Create UDP socket. */
+    if ((socket_fd = socket(server_addr.ss_family, SOCK_DGRAM, 0)) == -1) {
         perror("socket");
         exit(1);
     }
@@ -311,13 +311,13 @@ int main(int argc, char *argv[]) {
     bool response_received = false;
     int number_of_tries = 3;
 
-    do {
-        if (send_message(socket_fd, &message, sizeof(message), &server_address) != OK) {
+     do {
+        if (send_message(socket_fd, &message, sizeof(message), (struct sockaddr_in *)&server_addr) != OK) {
             exit(1);
         }
 
         // Receive message from server and store it in message_received and server_address in client_address
-        error_codes status = receive_message(socket_fd, &server_calcProtocol, sizeof(server_calcProtocol),
+        error_codes_t status = receive_message(socket_fd, &server_calcProtocol, sizeof(server_calcProtocol),
                                              &client_address);
         if (status == OK) {
             response_received = true;
