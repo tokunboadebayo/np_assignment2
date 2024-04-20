@@ -18,7 +18,7 @@ typedef enum error_codes {
     OK = 0,
     ERROR = 1,
     TIMEOUT = 2,
-} error_codes;
+} error_codes_t;
 
 typedef enum calcMessage_message
 {
@@ -210,8 +210,8 @@ void print_calcProtcol(calcProtocol *message) {
 int main(int argc, char *argv[]) {
     char server_name[SERVER_NAME_LEN_MAX + 1] = {0};
     int server_port, socket_fd;
-    struct hostent *server_host;
-    struct sockaddr_in server_address;
+
+
     struct calcProtocol server_calcProtocol;
     struct sockaddr_in client_address;
     struct timeval tv;
@@ -236,14 +236,18 @@ int main(int argc, char *argv[]) {
     // Host 127.0.0.1, and port 5000.
 
     printf("Host %s, and port %d.\n", server_name, server_port);
+    
     /* Get server host from server name. */
-    server_host = gethostbyname(server_name);
+    struct addrinfo hints, *server_info, *p;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC; // Support both IPv4 and IPv6
+    hints.ai_socktype = SOCK_STREAM;
 
-    /* Initialise IPv4 server address with server host. */
-    memset(&server_address, 0, sizeof server_address);
-    server_address.sin_family = server_host->h_addrtype;
-    server_address.sin_port = htons(server_port);
-    memcpy(&server_address.sin_addr.s_addr, server_host->h_addr, server_host->h_length);
+    int dns_status = getaddrinfo(server_name, Destport, &hints, &server_info);
+    if (dns_status != 0) {
+        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(dns_status));
+        return 1;
+    };
 
 
     /* Create UDP socket. */
@@ -301,3 +305,54 @@ int main(int argc, char *argv[]) {
         printf("No response received\n");
         exit(1);
     }
+
+
+    // process the calcProtocol message received from the server
+    calcProtocol client_response;
+    process_calc_control(&server_calcProtocol, &client_response);
+
+
+    // print the message received and the client address
+    print_calcProtcol(&server_calcProtocol);
+#if DEBUG
+    printf("Client address: %s\n", inet_ntoa(client_address.sin_addr));
+#endif
+    print_calcProtcol(&client_response);
+
+
+    // Receive CalcMessage from the server
+    calcMessage server_calcMessage;
+
+
+    // Setup Retries
+    response_received = false;
+    number_of_tries = 3;
+    do
+    {
+        // Send the response to the server
+        if (send_message(socket_fd, &client_response, sizeof(client_response), &server_address) != OK) {
+            exit(1);
+        }
+
+        // Receive message from server and store it in message_received and server_address in client_address
+        error_codes status  = receive_message(socket_fd, &server_calcMessage, sizeof(server_calcMessage),
+                                             &client_address);
+
+        if (status == OK) {
+            response_received = true;
+        } else if (status == TIMEOUT) {
+            printf("Timeout\n");
+        } else {
+            exit(1);
+        }
+    } while (!response_received && --number_of_tries > 0);
+
+    if (!response_received) {
+        printf("No response received\n");
+        exit(1);
+    }
+
+    // print the message received and the client address
+    print_calcMessage(&server_calcMessage);
+
+}
