@@ -210,8 +210,6 @@ void print_calcProtcol(calcProtocol *message) {
 int main(int argc, char *argv[]) {
     char server_name[SERVER_NAME_LEN_MAX + 1] = {0};
     int server_port, socket_fd;
-
-
     struct calcProtocol server_calcProtocol;
     struct sockaddr_in client_address;
     struct timeval tv;
@@ -236,7 +234,7 @@ int main(int argc, char *argv[]) {
     // Host 127.0.0.1, and port 5000.
 
     printf("Host %s, and port %d.\n", server_name, server_port);
-    
+
     /* Get server host from server name. */
     struct addrinfo hints, *server_info, *p;
     memset(&hints, 0, sizeof hints);
@@ -247,8 +245,7 @@ int main(int argc, char *argv[]) {
     if (dns_status != 0) {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(dns_status));
         return 1;
-    };
-
+    }
 
     // Extract the first IP address
     struct sockaddr_storage server_addr;
@@ -278,7 +275,8 @@ int main(int argc, char *argv[]) {
     inet_ntop(server_addr.ss_family, addr, ipstr, sizeof ipstr);
     printf("Connecting to %s\n", ipstr);
 
-     /* Create UDP socket. */
+
+    /* Create UDP socket. */
     if ((socket_fd = socket(server_addr.ss_family, SOCK_DGRAM, 0)) == -1) {
         perror("socket");
         exit(1);
@@ -311,7 +309,7 @@ int main(int argc, char *argv[]) {
     bool response_received = false;
     int number_of_tries = 3;
 
-     do {
+    do {
         if (send_message(socket_fd, &message, sizeof(message), (struct sockaddr_in *)&server_addr) != OK) {
             exit(1);
         }
@@ -374,7 +372,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     } while (!response_received && --number_of_tries > 0);
-    
+
     if (!response_received) {
         printf("No response received\n");
         exit(1);
