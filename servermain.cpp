@@ -245,3 +245,101 @@ void process_incoming_message(int server_socket, char *buffer, int recv_len, str
     } else if (clients[client_index].state == OPERATION_SENT) {
         // Verify the response from the client
         struct calcProtocol *calc_protocol = (struct calcProtocol *) buffer;
+        
+        // Verify the following fields
+        /* type            2
+         * major_version   1
+         * minor_version   0
+         * id              client_id
+         * result          result
+         */
+
+        // Populate local calc protocol
+        struct calcProtocol local_calc_protocol;
+        local_calc_protocol.type = htons(calc_protocol->type);
+        local_calc_protocol.major_version = htons(calc_protocol->major_version);
+        local_calc_protocol.minor_version = htons(calc_protocol->minor_version);
+        local_calc_protocol.id = htonl(calc_protocol->id);
+        local_calc_protocol.inResult = htonl(calc_protocol->inResult);
+        local_calc_protocol.flResult = calc_protocol->flResult;
+
+        // Check for the fields
+
+        if (local_calc_protocol.type == 2 && local_calc_protocol.major_version == 1 &&
+            local_calc_protocol.minor_version == 0 && local_calc_protocol.id == clients[client_index].id) {
+            // Update the client state
+            clients[client_index].state = RESULT_RECEIVED;
+
+            bool is_response_correct = false;
+
+            // Check if the result is correct
+            if (clients[client_index].operation.is_float) {
+                // compute the absolute difference between the two floating point numbers
+                double diff = clients[client_index].operation.result - local_calc_protocol.flResult;
+                // convert to positive
+                if (diff < 0) {
+                    diff = -diff;
+                }
+
+                // check if the difference is less than 0.0001
+                if (diff < 0.0001) {
+                    // set the response correct
+                    is_response_correct = true;
+                } else {
+                    printf("Float Value: %f, %f\n", clients[client_index].operation.result,
+                           local_calc_protocol.flResult);
+                    printf("Difference: %f\n", diff);
+                }
+            } else {
+                if (clients[client_index].operation.result == local_calc_protocol.inResult) {
+                    is_response_correct = true;
+                } else {
+                    printf("Int Value: %d, %d\n", clients[client_index].operation.result,
+                           local_calc_protocol.inResult);
+                }
+            }
+            
+
+            if (is_response_correct) {
+
+                // Send the result to the client
+                struct calcMessage correct_response = {0};
+                correct_response.type = htons(2);
+                correct_response.message = htonl(1);
+                correct_response.protocol = htons(17);
+                correct_response.major_version = htons(1);
+                correct_response.minor_version = htons(0);
+
+                // Send the result to the client
+                int bytes_sent = sendto(server_socket, &correct_response, sizeof(correct_response), 0,
+                                        (const struct sockaddr *) &clients[client_index].client_addr,
+                                        sizeof(struct sockaddr_in));
+                if (bytes_sent == -1) {
+                    perror("Error sending message");
+                    exit(EXIT_FAILURE);
+                }
+
+                // Update the client state
+
+            } else {
+                // Send the error response
+                struct calcMessage error_response;
+                //, type=2, message=2, major_version=1, minor_version=0.
+                error_response.type = htons(2);
+                error_response.message = htons(2);
+                error_response.protocol = htons(17);
+                error_response.major_version = htons(1);
+                error_response.minor_version = htons(0);
+
+                // Send the error response
+                int bytes_sent = sendto(server_socket, &error_response, sizeof(error_response), 0,
+                                        (const struct sockaddr *) &clients[client_index].client_addr,
+                                        sizeof(struct sockaddr_in));
+                if (bytes_sent == -1) {
+                    perror("Error sending message");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            clients[client_index].state = RESULT_SENT;
+        }
+    }
