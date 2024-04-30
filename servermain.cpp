@@ -54,3 +54,33 @@ struct assignment {
     bool is_float;
 };
 
+// Dictionary to track clients and their assignments
+struct ClientAssignment {
+    uint32_t id;
+    time_t timestamp;
+    struct sockaddr_in client_addr;
+    enum client_state state;
+    struct assignment operation;
+};
+
+struct ClientAssignment client_assignments[MAX_CLIENTS] = {{0}};
+
+int create_new_operation(char *message, size_t message_len, struct assignment *operation) {
+    unsigned int client_id = rand();
+
+    // verify the input parameters
+    if (message == NULL || operation == NULL || message_len == 0) {
+        fprintf(stderr, "Invalid input parameters\n");
+        return -1;
+    }
+
+    // Create a new calcProtocol message
+    struct calcProtocol *calc_protocol = (struct calcProtocol *) message;
+
+    // Generate random numbers
+    double f1 = randomFloat();
+    double f2 = randomFloat();
+
+    int i1 = randomInt();
+    int i2 = randomInt();
+
