@@ -343,3 +343,50 @@ void process_incoming_message(int server_socket, char *buffer, int recv_len, str
             clients[client_index].state = RESULT_SENT;
         }
     }
+
+    if (clients[client_index].state == RESULT_SENT) {
+        // transaction is complete, reset the client state
+        // Clear the client memory
+        memset(&clients[client_index], 0, sizeof(struct ClientAssignment));
+        clients[client_index].state = DISCONNECTED;
+    }
+
+    // Check for the timeout; if the client is not responding for more than 10 seconds, reset the client state to DISCONNECTED
+    time_t current_time = time(NULL);
+
+    // Iterate through the clients
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (current_time - clients[i].timestamp > MAX_TIMEOUT_IN_SEC) {
+            // transaction is timed out, reset the client state
+            // Clear the client memory
+            memset(&clients[i], 0, sizeof(struct ClientAssignment));
+            clients[i].state = DISCONNECTED;
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+
+    // Check for the command line arguments
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <ip>:<port>\n", argv[0]);
+        exit(1);
+    }
+
+    // init calc lib
+    initCalcLib();
+
+    char server_name[SERVER_NAME_LEN_MAX + 1] = {0};
+    int server_port;
+
+    struct sockaddr_storage server_address;
+
+    char delim[] = ":";
+    char *Desthost = strtok(argv[1], delim);
+    char *Destport = strtok(NULL, delim);
+
+    // Check if the input is correct
+    if (Desthost == NULL || Destport == NULL) {
+        printf("Usage: %s <ip>:<port>\n", argv[0]);
+        exit(1);
+    }
