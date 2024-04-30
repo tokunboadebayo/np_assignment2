@@ -1,16 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
+#include <string.h>
+#include <stdint.h>
 #include <unistd.h>
-#include <sys/time.h>
-
-/* You will to add includes here */
-
-
-// Included to get the support library
-#include <calcLib.h>
-
+#include <netdb.h>
+#include <time.h>
+#include <stdbool.h>
 #include "protocol.h"
+
+
+
+int get_server_address_info(const char *server_name, const char *Destport, struct sockaddr_storage *server_addr);
+
+void print_server_ip_addr(const struct sockaddr_storage *server_addr);
+
+int create_server_socket(int port, struct sockaddr_storage *server_address);
+
+
+// Constants
+#define BUFFER_SIZE 1024
+#define MAX_TIMEOUT_IN_SEC 10
+#define SERVER_NAME_LEN_MAX 255
+#define MAX_CLIENTS 100
+#define INVALID_CLIENT_ID 0
 
 
 using namespace std;
