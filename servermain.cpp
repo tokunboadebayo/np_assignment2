@@ -437,3 +437,118 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+int get_server_address_info(const char *server_name, const char *Destport,
+                            struct sockaddr_storage *server_addr) {
+    // Verify input parameters
+    if (server_name == NULL || Destport == NULL || server_addr == NULL) {
+        fprintf(stderr, "Invalid input parameters\n");
+        return -1;
+    }
+
+    // clear the server_addr memory
+    memset(server_addr, 0, sizeof *server_addr);
+
+    // Verify that the port number is within the valid range
+    int port = atoi(Destport);
+    if (port < 0 || port > 65535) {
+        fprintf(stderr, "Invalid port number: %s\n", Destport);
+        return -1;
+    }
+
+    /* Get server host from server name */
+    struct addrinfo hints, *server_info;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC; // Support both IPv4 and IPv6
+    hints.ai_socktype = SOCK_STREAM;
+
+    int dns_status = getaddrinfo(server_name, Destport, &hints, &server_info);
+    if (dns_status != 0) {
+        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(dns_status));
+        return -1;
+    }
+
+    // Extract the first IP address
+    struct addrinfo *p;
+    for (p = server_info; p != NULL; p = p->ai_next) {
+        if (p->ai_family == AF_INET || p->ai_family == AF_INET6) {
+            memcpy(server_addr, p->ai_addr, p->ai_addrlen);
+            break;
+        }
+    }
+
+    freeaddrinfo(server_info); // Free memory allocated by getaddrinfo
+
+    if (p == NULL) {
+        fprintf(stderr, "Failed to extract IP address\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+void print_server_ip_addr(const struct sockaddr_storage *server_addr) {
+    // Convert the IP address to a string and print it
+    char ipstr[INET6_ADDRSTRLEN];
+    void *addr;
+    if (server_addr->ss_family == AF_INET) {
+        struct sockaddr_in *ipv4 = (struct sockaddr_in *) server_addr;
+        addr = &(ipv4->sin_addr);
+    } else {
+        struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *) server_addr;
+        addr = &(ipv6->sin6_addr);
+    }
+
+    inet_ntop(server_addr->ss_family, addr, ipstr, sizeof ipstr);
+    printf("Connecting to %s\n", ipstr);
+}
+
+int create_server_socket(int port, struct sockaddr_storage *server_address) {
+    int socket_fd;
+
+    struct sockaddr_in sockaddr_in;
+    struct sockaddr_in6 sockaddr_in6;
+
+    if (server_address->ss_family == AF_INET) {
+        // Convert to sockaddr_in (IPv4)
+        memset(&sockaddr_in, 0, sizeof(sockaddr_in));
+        sockaddr_in.sin_family = AF_INET;
+        sockaddr_in.sin_port = htons(port);
+        // copy the sin_addr
+        memcpy(&sockaddr_in.sin_addr, &((struct sockaddr_in *) server_address)->sin_addr,
+               sizeof(struct in_addr));
+
+    } else if (server_address->ss_family == AF_INET6) {
+        // Convert to sockaddr_in6 (IPv6)
+        memset(&sockaddr_in6, 0, sizeof(sockaddr_in6));
+        sockaddr_in6.sin6_family = AF_INET6;
+        sockaddr_in6.sin6_port = htons(port);
+        // copy the sin6_addr
+        memcpy(&sockaddr_in6.sin6_addr, &((struct sockaddr_in6 *) server_address)->sin6_addr,
+               sizeof(struct in6_addr));
+    } else {
+        fprintf(stderr, "Unsupported address family\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Create UDP socket
+    if ((socket_fd = socket(server_address->ss_family, SOCK_DGRAM, 0)) == -1) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Bind the socket
+    if (server_address->ss_family == AF_INET) {
+        if (bind(socket_fd, (struct sockaddr *) &sockaddr_in, sizeof(sockaddr_in)) == -1) {
+            perror("bind");
+            exit(EXIT_FAILURE);
+        }
+    } else if (server_address->ss_family == AF_INET6) {
+        if (bind(socket_fd, (struct sockaddr *) &sockaddr_in6, sizeof(sockaddr_in6)) == -1) {
+            perror("bind");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return socket_fd;
+}
