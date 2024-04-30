@@ -84,3 +84,29 @@ int create_new_operation(char *message, size_t message_len, struct assignment *o
     int i1 = randomInt();
     int i2 = randomInt();
 
+    // G    // Create a new calcProtocol messageenerate a random operation between 1 and 8
+
+    enum operation op = (enum operation) (rand() % FDIV + 1);
+
+    // Populate the calcProtocol message
+    calc_protocol->type = htons(1);
+    calc_protocol->major_version = htons(1);
+    calc_protocol->minor_version = htons(0);
+    calc_protocol->id = htonl(client_id);
+    calc_protocol->arith = htonl(op);
+    calc_protocol->inValue1 = htonl(i1);
+    calc_protocol->inValue2 = htonl(i2);
+    calc_protocol->flValue1 = f1;
+    calc_protocol->flValue2 = f2;
+    // Reset the result
+    calc_protocol->inResult = 0;
+    calc_protocol->flResult = 0.0;
+
+    // Store the operation
+    operation->operation = op;
+    operation->fval[0] = f1;
+    operation->fval[1] = f2;
+    operation->ival[0] = i1;
+    operation->ival[1] = i2;
+    operation->result = 0.0;
+    operation->is_float = op >= FADD ? true : false;
