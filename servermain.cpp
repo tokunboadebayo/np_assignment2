@@ -177,3 +177,71 @@ void process_incoming_message(int server_socket, char *buffer, int recv_len, str
             }
         }
     }
+
+    // Get the state for the client
+    enum client_state state = clients[client_index].state;
+
+    // If the client is connected, send the operation
+    if (state == CONNECTED) {
+        // Verify the protocol supported by the client
+        struct calcMessage *calc_message = (struct calcMessage *) buffer;
+
+        // verify the following fields
+        /* type            22
+        message         0
+        protocol        17
+        major_version   1
+        minor_version   0 */
+
+        // populate local calc message
+        struct calcMessage local_calc_message;
+        local_calc_message.type = htons(calc_message->type);
+        local_calc_message.message = htonl(calc_message->message);
+        local_calc_message.protocol = htons(calc_message->protocol);
+        local_calc_message.major_version = htons(calc_message->major_version);
+        local_calc_message.minor_version = htons(calc_message->minor_version);
+
+        // Check for the fields
+        if (local_calc_message.type == 22 && local_calc_message.message == 0 && local_calc_message.protocol == 17 &&
+            local_calc_message.major_version == 1 && local_calc_message.minor_version == 0) {
+            // Create a new operation
+            char operation_buffer[BUFFER_SIZE] = {0};
+            clients[client_index].id = create_new_operation(operation_buffer, BUFFER_SIZE,
+                                                            &clients[client_index].operation);
+            if (clients[client_index].id == -1) {
+                fprintf(stderr, "Error creating new operation\n");
+                return;
+            }
+
+            // Update the client state
+            clients[client_index].state = OPERATION_SENT;
+
+            // Send the operation to the client
+            int bytes_sent = sendto(server_socket, operation_buffer, sizeof(operation_buffer), 0, client_addr,
+                                    sizeof(struct sockaddr_in));
+            if (bytes_sent == -1) {
+                perror("Error sending message");
+                exit(EXIT_FAILURE);
+            }
+
+        } else {
+            struct calcMessage error_response;
+            //, type=2, message=2, major_version=1, minor_version=0.
+            error_response.type = htons(2);
+            error_response.message = htons(2);
+            error_response.protocol = htons(17);
+            error_response.major_version = htons(1);
+            error_response.minor_version = htons(0);
+
+            // Send the error response
+            int bytes_sent = sendto(server_socket, &error_response, sizeof(error_response), 0,
+                                    (struct sockaddr *) &client_addr, sizeof(client_addr));
+            if (bytes_sent == -1) {
+                perror("Error sending message");
+                exit(EXIT_FAILURE);
+            }
+            clients[client_index].state = DISCONNECTED;
+        }
+    } else if (clients[client_index].state == OPERATION_SENT) {
+        // Verify the response from the client
+        struct calcProtocol *calc_protocol = (struct calcProtocol *) buffer;
