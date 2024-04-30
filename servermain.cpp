@@ -110,3 +110,70 @@ int create_new_operation(char *message, size_t message_len, struct assignment *o
     operation->ival[1] = i2;
     operation->result = 0.0;
     operation->is_float = op >= FADD ? true : false;
+
+    // Compute the result
+    switch (op) {
+        case ADD:
+            operation->result = i1 + i2;
+            break;
+        case SUB:
+            operation->result = i1 - i2;
+            break;
+        case MUL:
+            operation->result = i1 * i2;
+            break;
+        case DIV:
+            operation->result = (int) (i1 / i2);
+            break;
+        case FADD:
+            operation->result = f1 + f2;
+            break;
+        case FSUB:
+            operation->result = f1 - f2;
+            break;
+        case FMUL:
+            operation->result = f1 * f2;
+            break;
+        case FDIV:
+            operation->result = f1 / f2;
+            break;
+        default:
+            fprintf(stderr, "Invalid operation\n");
+            return -1;
+    }
+
+    return client_id;
+}
+
+void process_incoming_message(int server_socket, char *buffer, int recv_len, struct sockaddr *client_addr,
+                              struct ClientAssignment *clients) {
+
+    // verify the input parameters
+    if (buffer == NULL || client_addr == NULL || clients == NULL) {
+        fprintf(stderr, "Invalid input parameters\n");
+        return;
+    }
+
+
+    // Check if the client is already in the list
+    int client_index = -1;
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (memcmp(&clients[i].client_addr, client_addr, sizeof(struct sockaddr_in)) == 0) {
+            client_index = i;
+            break;
+        }
+    }
+
+    // If the client is not in the list, add it
+    if (client_index == -1) {
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            if (clients[i].state == DISCONNECTED) {
+                clients[i].id = INVALID_CLIENT_ID;
+                clients[i].state = CONNECTED;
+                clients[i].client_addr = *((struct sockaddr_in *) client_addr);
+                clients[i].timestamp = time(NULL);
+                client_index = i;
+                break;
+            }
+        }
+    }
