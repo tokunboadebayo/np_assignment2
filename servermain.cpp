@@ -390,3 +390,50 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s <ip>:<port>\n", argv[0]);
         exit(1);
     }
+
+     // init calc lib
+    initCalcLib();
+
+    memset(client_assignments, 0, sizeof(client_assignments));
+
+    /* Get server name from command line arguments or stdin. */
+    strncpy(server_name, Desthost, SERVER_NAME_LEN_MAX);
+
+    /* Get server port from command line arguments or stdin. */
+    server_port = atoi(Destport);
+
+    /* Print IP or Host and Port number */
+    // Host 127.0.0.1, and port 5000.
+
+    printf("Host %s, and port %d.\n", server_name, server_port);
+    get_server_address_info(server_name, Destport, &server_address);
+    print_server_ip_addr((struct sockaddr_storage *) &server_address);
+
+    int server_socket = create_server_socket(server_port, &server_address);
+
+    // Initialize the client assignments
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
+    char receive_buffer[BUFFER_SIZE] = {0};
+
+    while (1) {
+        // Receive message from client
+        ssize_t recv_len = recvfrom(server_socket, receive_buffer, BUFFER_SIZE, 0,
+                                    (struct sockaddr *) &client_addr,
+                                    &client_addr_len);
+        if (recv_len == -1) {
+            perror("Error receiving message");
+            exit(EXIT_FAILURE);
+        }
+
+        // handle the incoming message
+        process_incoming_message(server_socket, receive_buffer, recv_len, (struct sockaddr *) &client_addr,
+                                 client_assignments);
+
+    }
+
+    // Close the socket
+    close(server_socket);
+
+    return 0;
+}
