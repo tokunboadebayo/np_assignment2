@@ -1,13 +1,13 @@
 
-all: libcalc test client server serverD
+all: libcalc test client server server
 
 
 
-servermain.o: servermain.cpp protocol.h
-	$(CXX) -Wall -c servermain.cpp -I.
+servermain.o: servermain.c protocol.h
+	$(CXX) -Wall -c servermain.c -I.
 
-servermainD.o: servermain.cpp protocol.h
-	$(CXX) -Wall -c servermain.cpp -I. -DDEBUG -o servermainD.o
+servermain.o: servermain.c protocol.h
+	$(CXX) -Wall -c servermain.c -I. -DDEBUG -o servermain.o
 
 
 clientmain.o: clientmain.cpp protocol.h
@@ -26,8 +26,8 @@ client: clientmain.o calcLib.o
 server: servermain.o calcLib.o
 	$(CXX) -L./ -Wall -o server servermain.o -lcalc
 
-serverD: servermainD.o calcLib.o
-	$(CXX) -L./ -Wall -o serverD servermainD.o -lcalc 
+server: servermain.o calcLib.o
+	$(CXX) -L./ -Wall -o server servermain.o -lcalc 
 
 
 
