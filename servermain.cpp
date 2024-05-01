@@ -391,7 +391,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-     // init calc lib
+    // init calc lib
     initCalcLib();
 
     memset(client_assignments, 0, sizeof(client_assignments));
