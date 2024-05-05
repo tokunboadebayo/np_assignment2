@@ -25,6 +25,7 @@ int create_server_socket(int port, struct sockaddr_storage *server_address);
 #define MAX_CLIENTS 100
 #define INVALID_CLIENT_ID 0
 
+
 // Enum for operation mapping
 enum operation {
     ADD = 1,
@@ -53,6 +54,7 @@ struct assignment {
     double result;
     bool is_float;
 };
+
 
 // Dictionary to track clients and their assignments
 struct ClientAssignment {
@@ -84,9 +86,10 @@ int create_new_operation(char *message, size_t message_len, struct assignment *o
     int i1 = randomInt();
     int i2 = randomInt();
 
-    // G    // Create a new calcProtocol messageenerate a random operation between 1 and 8
+    // Generate a random operation between 1 and 8
 
     enum operation op = (enum operation) (rand() % FDIV + 1);
+
 
     // Populate the calcProtocol message
     calc_protocol->type = htons(1);
@@ -245,7 +248,7 @@ void process_incoming_message(int server_socket, char *buffer, int recv_len, str
     } else if (clients[client_index].state == OPERATION_SENT) {
         // Verify the response from the client
         struct calcProtocol *calc_protocol = (struct calcProtocol *) buffer;
-        
+
         // Verify the following fields
         /* type            2
          * major_version   1
@@ -298,7 +301,7 @@ void process_incoming_message(int server_socket, char *buffer, int recv_len, str
                            local_calc_protocol.inResult);
                 }
             }
-            
+
 
             if (is_response_correct) {
 
@@ -343,6 +346,7 @@ void process_incoming_message(int server_socket, char *buffer, int recv_len, str
             clients[client_index].state = RESULT_SENT;
         }
     }
+
 
     if (clients[client_index].state == RESULT_SENT) {
         // transaction is complete, reset the client state
@@ -437,6 +441,7 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
 
 int get_server_address_info(const char *server_name, const char *Destport,
                             struct sockaddr_storage *server_addr) {

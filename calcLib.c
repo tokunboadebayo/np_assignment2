@@ -58,16 +58,24 @@ char *randomType(void){
 int randomInt(void){
   /* Draw a random interger between o and RAND_MAX, then modulo this with 100 to get a random 
      number between 0 and 100. */
-  
-  return( rand()%100 );
+    // make sure number is NOT zero
+    do {
+      int x = rand()%100;
+      if (x != 0) {
+              return(x);
+      }
+      } while (1);
 };
 
 
 double randomFloat(void){
   /* The same as for the interber, but for a double, and without the modulo. We cant use 
      the module approach as it would generate integers, which we do not want. */
-  double x = (double)rand()/(double)(RAND_MAX/100.0);
-  return(x);
+  // make sure number is NOT zero
+  do {
+    double x = (double)rand()/(double)(RAND_MAX/100.0);
+    if (x != 0.0) {
+      return(x);
+    }
+  } while (1);
 };
-
-
